@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="135" viewBox="0 0 1200 135" role="img" aria-labelledby="title">
+<title id="title">Every idea starts with a point · Keep exploring</title>
+<defs>
+ <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101f27"/><stop offset="1" stop-color="#091218"/></linearGradient>
+ <radialGradient id="halo"><stop stop-color="#256d60" stop-opacity=".35"/><stop offset="1" stop-color="#256d60" stop-opacity="0"/></radialGradient>
+ <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 H 0 V 40" fill="none" stroke="#284049" stroke-width=".6"/></pattern>
+ <clipPath id="clip"><rect width="1200" height="135" rx="20"/></clipPath>
+</defs>
+<style>
+ text{font-family:Segoe UI,Arial,sans-serif} .mono{font-family:Consolas,monospace;letter-spacing:2px}
+ .flow{stroke-dasharray:7 11;animation:flow 18s linear infinite} .pulse{animation:pulse 4s ease-in-out infinite}
+ .orbit{transform-origin:927px 222px;animation:orbit 26s linear infinite}
+ .float{animation:float 5s ease-in-out infinite} .trace{stroke-dasharray:36 320;animation:flow 7s linear infinite}
+ .scan{animation:scan 9s ease-in-out infinite} .contour{animation:contour 7s ease-in-out infinite}
+ @keyframes orbit{to{transform:rotate(360deg)}} @keyframes float{50%{transform:translateY(-5px)}}
+ @keyframes scan{50%{transform:translateY(295px);opacity:.6}} @keyframes contour{50%{stroke-opacity:.3}}
+ @keyframes flow{to{stroke-dashoffset:-360}} @keyframes pulse{50%{opacity:.3}}
+ @media(prefers-reduced-motion:reduce){.flow,.pulse,.orbit,.float,.trace,.scan,.contour{animation:none}}
+</style>
+<g clip-path="url(#clip)"><rect width="1200" height="135" fill="url(#bg)"/><path d="M0 92 C170 92 201 12 354 40 S555 119 730 69 S1037 0 1200 58" fill="none" stroke="#2e675e"/><path d="M0 92 C170 92 201 12 354 40 S555 119 730 69 S1037 0 1200 58" fill="none" stroke="#63e6c4" class="flow"/><rect x="337" y="36" width="526" height="65" rx="15" fill="#0c181e"/><text x="600" y="64" font-size="22" fill="#edf6f4" font-weight="600" text-anchor="middle">Every idea starts with a point.</text><text x="600" y="89" font-size="10" fill="#63e6c4" font-weight="400" text-anchor="middle" class="mono">KEEP EXPLORING / STEPHENCURRYAN</text></g>
+<rect x=".5" y=".5" width="1199" height="134" rx="20" fill="none" stroke="#2a4249"/>
+</svg>
