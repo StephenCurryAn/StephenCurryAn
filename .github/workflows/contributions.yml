@@ -1,0 +1,35 @@
+name: Update contribution atlas
+
+on:
+  schedule:
+    - cron: '23 1 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/build_contributions.py'
+      - '.github/workflows/contributions.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contribution-atlas
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render real contribution activity
+        run: python3 tools/build_contributions.py
+      - name: Commit updated artwork
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/contributions.svg data/contributions-*.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update contribution atlas'
+            git push
+          fi
