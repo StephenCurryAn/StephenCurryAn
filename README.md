@@ -28,9 +28,9 @@
 
 ### 02 / CONTRIBUTIONS · 每一步，都有迹可循
 
-<img src="./assets/contributions.svg" width="100%" alt="真实年度贡献图：发光日历与立体贡献地形。每格对应一天，柱高随当天贡献数量增加。" />
+<img src="./assets/contributions.svg" width="100%" alt="过去一年滚动贡献图：发光日历与立体贡献地形。每格对应一天，柱高随当天贡献数量增加。" />
 
-<p align="center"><sub>每个亮点，都是一次积累。数据来自 GitHub 公开贡献日历。</sub></p>
+<p align="center"><sub>与 GitHub 原生「过去一年」日历使用同一日期范围和每日贡献数据，每日刷新。</sub></p>
 
 <br />
 

@@ -39,9 +39,14 @@ class Calendar(HTMLParser):
             self.tip = None
 
 
-def parse_calendar(source, start, end):
+def parse_calendar(source, start=None, end=None):
     parser = Calendar()
     parser.feed(source)
+    if not parser.cells:
+        raise ValueError('GitHub returned no contribution dates. Existing artwork will be preserved.')
+    if start is None and end is None:
+        dates = [date.fromisoformat(day) for day, _ in parser.cells.values()]
+        start, end = min(dates), max(dates)
     days = {}
     for key, (day, level) in parser.cells.items():
         d = date.fromisoformat(day)
@@ -70,8 +75,8 @@ def text(x, y, value, size=13, color='#94afaf', extra=''):
     return f'<text x="{x}" y="{y}" fill="{color}" font-size="{size}" {extra}>{escape(str(value))}</text>'
 
 
-def render(days, year, updated):
-    first = date(year, 1, 1)
+def render(days, period, updated):
+    first = date.fromisoformat(days[0]['date'])
     offset = (first.weekday()+1) % 7
     total = sum(d['count'] for d in days)
     active = sum(d['count'] > 0 for d in days)
@@ -80,7 +85,7 @@ def render(days, year, updated):
     for day in days:
         run = run + 1 if day['count'] else 0
         longest = max(longest, run)
-    body = text(38,43,f'{year} / CONTRIBUTION ATLAS',16,'#63e6c4','class="mono"')
+    body = text(38,43,f'{period} / CONTRIBUTION ATLAS',16,'#63e6c4','class="mono"')
     body += text(38,77,'Small steps. A visible journey.',26,'#edf6f4','font-weight="600"')
     for x, value, label in [(758,total,'CONTRIBUTIONS'),(920,active,'ACTIVE DAYS'),(1070,longest,'BEST STREAK')]:
         body += text(x,48,value,30,'#f5bd66','font-weight="700"') + text(x,72,label,9,extra='class="mono"')
@@ -111,10 +116,15 @@ def render(days, year, updated):
         blocks.append((by,f'<g><title>{label}</title>{block}</g>'))
     for weekday,label in [(1,'MON'),(3,'WED'),(5,'FRI')]:
         body += text(26,136+weekday*20,label,8,extra='class="mono"')
-    for month in range(1,13):
-        d = date(year,month,1)
+    last_label_week = -2
+    for item in days:
+        d = date.fromisoformat(item['date'])
+        if d != first and d.day != 1:
+            continue
         week = ((d-first).days+offset)//7
-        body += text(69+week*20,112,d.strftime('%b').upper(),9,extra='class="mono"')
+        if week - last_label_week >= 2:
+            body += text(69+week*20,112,d.strftime('%b').upper(),9,extra='class="mono"')
+            last_label_week = week
     body += ''.join(cells)
     body += '<g clip-path="url(#calendar)"><path d="M65 122 V262" stroke="#b8ffe9" stroke-width="2" opacity=".5" class="sweep"/></g>'
     body += text(69,293,'LESS',8,extra='class="mono"')
@@ -131,7 +141,7 @@ def render(days, year, updated):
     body += text(40,548,f'PUBLIC GITHUB CALENDAR / {USER}',9,extra='class="mono"')
     body += text(1160,548,f'{days[0]["date"]} → {days[-1]["date"]} · Updated {updated}',10,extra='text-anchor="end"')
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="575" viewBox="0 0 1200 575" role="img" aria-labelledby="title desc">
-<title id="title">{USER} · {year} contribution atlas</title><desc id="desc">Real GitHub calendar. {total} contributions, {active} active days, longest streak {longest} days. Height represents daily count using a logarithmic scale.</desc>
+<title id="title">{USER} · {period} contribution atlas</title><desc id="desc">Real GitHub calendar. {total} contributions, {active} active days, longest streak {longest} days. Height represents daily count using a logarithmic scale.</desc>
 <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#10222b"/><stop offset="1" stop-color="#091218"/></linearGradient><clipPath id="calendar"><rect x="65" y="122" width="1070" height="141"/></clipPath></defs>
 <style>text{{font-family:Segoe UI,Arial,sans-serif}}.mono{{font-family:Consolas,monospace;letter-spacing:1.3px}}.spark{{animation:spark 4s ease-in-out infinite}}.sweep{{animation:sweep 16s linear infinite}}@keyframes spark{{50%{{opacity:.08}}}}@keyframes sweep{{to{{transform:translateX(1070px)}}}}@media(prefers-reduced-motion:reduce){{.spark,.sweep{{animation:none}}}}</style>
 <rect x=".5" y=".5" width="1199" height="574" rx="20" fill="url(#bg)" stroke="#2a4249"/>{body}</svg>'''
@@ -140,25 +150,34 @@ def render(days, year, updated):
 def main():
     today = datetime.now(timezone(timedelta(hours=8))).date()
     args = argparse.ArgumentParser(description=__doc__)
-    args.add_argument('--year', type=int, default=today.year)
+    args.add_argument('--year', type=int, help='Render a calendar year instead of the rolling profile window.')
     args.add_argument('--output', default='assets/contributions.svg')
     options = args.parse_args()
-    if not 2008 <= options.year <= today.year:
-        args.error('Year must be between 2008 and the current year.')
-    start, end = date(options.year,1,1), min(today,date(options.year,12,31))
-    url = f'https://github.com/users/{USER}/contributions?from={start}&to={end}'
-    request = Request(url,headers={'User-Agent':f'{USER}-profile','Accept-Language':'en-US,en;q=0.9'})
+    start = end = None
+    period, snapshot = 'PAST YEAR', 'rolling'
+    url = f'https://github.com/users/{USER}/contributions'
+    if options.year is not None:
+        if not 2008 <= options.year <= today.year:
+            args.error('Year must be between 2008 and the current year.')
+        start, end = date(options.year,1,1), min(today,date(options.year,12,31))
+        period = snapshot = str(options.year)
+        url += f'?from={start}&to={end}'
+    request = Request(url,headers={'User-Agent':f'{USER}-profile','Accept-Language':'en-US,en;q=0.9','Cache-Control':'no-cache'})
     with urlopen(request,timeout=45) as response:
         source = response.read().decode('utf-8')
     days = parse_calendar(source,start,end)
-    artwork = render(days,options.year,today.isoformat())
+    if options.year is None:
+        total = re.search(r'([\d,]+)\s+contributions?\s+in the last year', source)
+        if not total or int(total.group(1).replace(',', '')) != sum(d['count'] for d in days):
+            raise ValueError('Daily counts do not match the GitHub profile total. Existing artwork will be preserved.')
+    artwork = render(days,period,today.isoformat())
     output = ROOT / options.output
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(artwork,encoding='utf-8')
-    data = ROOT / 'data' / f'contributions-{options.year}.json'
+    data = ROOT / 'data' / f'contributions-{snapshot}.json'
     data.parent.mkdir(exist_ok=True)
     data.write_text(json.dumps({'source':url,'updated':str(today),'days':days},indent=2)+'\n',encoding='utf-8')
-    print(f'{options.year}: {len(days)} days, {sum(d["count"] for d in days)} contributions. Saved {output.name}.')
+    print(f'{period}: {len(days)} days, {sum(d["count"] for d in days)} contributions. Saved {output.name}.')
 
 
 if __name__ == '__main__':
